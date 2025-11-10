@@ -78,6 +78,7 @@ class SoloMVPInitializer {
         const structure = template.getStructure();
         const workflowDoc = this.createSoloWorkflowDoc(spec);
         const readme = this.generateReadme(specForReadme);
+        const gitignore = this.generateGitignore();
 
         const files: GeneratedFiles = {
             readme,
@@ -86,11 +87,63 @@ class SoloMVPInitializer {
             structure,
             workflowDoc,
             devPlan,
+            gitignore,
             packageJson,
             progressTracker,
             workflowScript,
         };
         return { files, successMessage };
+    }
+
+    private generateGitignore(): string {
+        return `# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+/venv/
+/env/
+.env/
+pip-cache/
+pip-selfcheck.json
+*.egg-info/
+*.egg
+`;
     }
 
     private generateReadme(specForReadme: YouTubeAutomationSpec | string): string {
@@ -113,6 +166,7 @@ The generated files provide a powerful, guided development experience, especiall
 
 1.  **Create Project Folder**: Create a new directory for your project on your local machine.
 2.  **Create Files**: Using the output from this tool, create the following files and folders:
+    - \`.gitignore\`
     - \`package.json\`
     - \`progress-tracker.json\`
     - \`solo-workflow.js\`
@@ -145,7 +199,7 @@ This command will display the objectives for the first development phase (Weeks 
 
 #### **Step 3: Mark Your Progress**
 
-Once you've completed the objectives for the week and integrated the code, update your progress tracker by running:
+Once you'vecompleted the objectives for the week and integrated the code, update your progress tracker by running:
 \`\`\`bash
 node solo-workflow.js apply-week 1
 \`\`\`
@@ -824,26 +878,253 @@ YOUTUBE_API_KEY=your_youtube_key_here
     }
 
     private generateAIToolStructure(): string {
-        return `
-/ (root)
-|-- /src
-|   |-- /components
-|   |   |-- FileUploader.tsx
-|   |   |-- ResultsDisplay.tsx
-|   |   |-- CopyButton.tsx
-|   |-- /services
-|   |   |-- geminiService.ts (Handles communication with Gemini API)
-|   |-- /hooks
-|   |   |-- useMeetingProcessor.ts (Custom hook for state management)
-|   |-- /utils
-|   |   |-- fileHelpers.ts
-|   |-- App.tsx
-|   |-- main.tsx
-|-- /public
-|-- package.json
-|-- vite.config.ts
-|-- tailwind.config.js
-`;
+        const structure = {
+            directories: {
+                'src': ['services'],
+                'public': []
+            },
+            files: {
+                'package.json': JSON.stringify({
+                    name: "ai-productivity-tool",
+                    private: true,
+                    version: "0.0.0",
+                    type: "module",
+                    scripts: {
+                        dev: "vite",
+                        build: "tsc && vite build",
+                        preview: "vite preview"
+                    },
+                    dependencies: {
+                        "react": "^18.2.0",
+                        "react-dom": "^18.2.0",
+                        "@google/genai": "^0.3.1"
+                    },
+                    devDependencies: {
+                        "@types/react": "^18.2.0",
+                        "@types/react-dom": "^18.2.0",
+                        "@vitejs/plugin-react": "^4.2.0",
+                        "autoprefixer": "^10.4.16",
+                        "postcss": "^8.4.32",
+                        "tailwindcss": "^3.3.6",
+                        "typescript": "^5.2.2",
+                        "vite": "^5.0.0"
+                    }
+                }, null, 2),
+                'vite.config.ts': `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  // This is a workaround to make process.env available in the browser.
+  // IMPORTANT: This is NOT secure for production apps.
+  // In a real-world scenario, you should make your API calls from a backend server
+  // where your API key can be kept secret. The key is injected by the
+  // execution environment, but exposing it client-side is a security risk.
+  define: {
+    'process.env': {}
+  }
+})`,
+                'tailwind.config.js': `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+}`,
+                '.env.example': 'API_KEY=your_gemini_api_key_here',
+                'README.md': `# AI Productivity Tool\n\nThis is a boilerplate for an AI-powered tool that acts as a "second brain" for meetings, automatically generating summaries, action items, and follow-up emails.`,
+                'src/index.css': `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+`,
+                'src/main.tsx': `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`,
+                'src/App.tsx': `import React, { useState } from 'react';
+import { summarizeMeeting } from './services/gemini';
+
+function App() {
+  const [transcript, setTranscript] = useState('');
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSummarize = async () => {
+    if (!transcript.trim()) {
+      setError('Please enter a transcript.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setSummary(null);
+
+    try {
+      const result = await summarizeMeeting(transcript);
+      setSummary(JSON.stringify(result, null, 2));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 text-white min-h-screen p-4 sm:p-8 font-sans">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+            AI Meeting Summarizer
+          </h1>
+          <p className="mt-4 text-lg text-gray-400">
+            Paste your meeting transcript below to automatically generate summaries, action items, and follow-up emails.
+          </p>
+        </header>
+
+        <main>
+          <div className="space-y-4">
+            <textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              placeholder="Paste your meeting transcript here..."
+              className="w-full h-64 p-4 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none transition"
+              rows={10}
+            />
+            <button
+              onClick={handleSummarize}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Summarizing...
+                </>
+              ) : 'Summarize Meeting'}
+            </button>
+          </div>
+
+          {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
+
+          {summary && (
+            <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h2 className="text-2xl font-bold mb-4">Summary Results</h2>
+              <pre className="text-sm whitespace-pre-wrap font-mono text-gray-300 bg-gray-900/50 p-4 rounded-md overflow-x-auto">
+                <code>{summary}</code>
+              </pre>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default App
+`,
+                'src/services/gemini.ts': `import { GoogleGenAI, Type } from "@google/genai";
+
+// IMPORTANT: The following code is a simplified example and should not be used in a production environment.
+// The Gemini API key is exposed on the client side, which is a significant security risk.
+// In a real-world application, all API calls should be made from a secure backend server
+// to protect your API key from being compromised.
+// The execution environment for this app injects the API key via process.env.API_KEY.
+
+const API_KEY = process.env.API_KEY;
+
+if (!API_KEY) {
+    // In a real app, you might show a user-friendly error message here.
+    // For this boilerplate, we'll throw an error to make the issue clear during development.
+    throw new Error("API_KEY environment variable not set. Please ensure it's configured in your environment.");
+}
+
+const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+        summary: {
+            type: Type.STRING,
+            description: "A concise, one-paragraph summary of the meeting's purpose, key discussion points, and outcomes."
+        },
+        decisions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "A list of all concrete decisions that were made."
+        },
+        action_items: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    task: { type: Type.STRING },
+                    owner: { type: Type.STRING },
+                    due_date: { type: Type.STRING }
+                },
+                required: ['task', 'owner', 'due_date']
+            },
+            description: "A list of all action items. If an owner or due date is not explicitly mentioned, use 'Not specified'."
+        },
+        follow_up_email: {
+            type: Type.STRING,
+            description: 'Draft a professional follow-up email to all meeting attendees. Start the email with "Hi Team,".'
+        }
+    },
+    required: ['summary', 'decisions', 'action_items', 'follow_up_email']
+};
+
+export async function summarizeMeeting(transcript: string): Promise<any> {
+    const prompt = \`Analyze the following meeting transcript and produce a structured, actionable summary in JSON format based on the provided schema.
+
+Meeting Transcript:
+\\\`\\\`\\\`
+\${transcript}
+\\\`\\\`\\\`
+\`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: responseSchema,
+            }
+        });
+
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText);
+    } catch (error) {
+        console.error("Error summarizing meeting:", error);
+        if (error instanceof Error) {
+            throw new Error(\`Failed to get summary from Gemini: \${error.message}\`);
+        }
+        throw new Error("An unknown error occurred while communicating with the AI.");
+    }
+}`
+            }
+        };
+        return JSON.stringify(structure, null, 2);
     }
 
     private createSoloWorkflowDoc(spec: string): string {

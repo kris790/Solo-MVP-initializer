@@ -48,6 +48,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ files }) => {
             {files.packageJson && (
               <FileContentCard title="Package Config" fileName="package.json" content={files.packageJson} icon={<CodeIcon className="w-6 h-6" />} />
             )}
+            
+            <FileContentCard title="Git Ignore" fileName=".gitignore" content={files.gitignore} icon={<CodeIcon className="w-6 h-6" />} />
+
             {files.progressTracker && (
               <FileContentCard title="Progress Tracker" fileName="progress-tracker.json" content={files.progressTracker} icon={<FileTextIcon className="w-6 h-6" />} />
             )}

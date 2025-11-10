@@ -16,80 +16,74 @@ A web-based tool designed to help solo developers, indie hackers, and entreprene
   - **Progress Tracker**: A `progress-tracker.json` file that works with the workflow script to log your progress.
   - **Development Plan**: A structured plan outlining milestones, resource needs, budget, and success criteria.
 
-## 🚀 How to Use This Tool
+## 🚀 Usage
+
+Using the Solo MVP Initializer is a two-part process: first, you generate your blueprint using the web interface, and then you use the generated files (especially the interactive workflow script) to guide your local development.
+
+### Part 1: Generating Your Blueprint
 
 1.  **Enter Project Name**: Give your project a name (e.g., "QuickCast AI").
 2.  **Select Project Type**: Choose the blueprint that best fits your idea. The "YouTube Automation" type is the most feature-rich example.
 3.  **Initialize MVP**: Click the button to generate your complete blueprint.
-4.  **Review & Download**: Your generated files will appear below. Use the "Copy" button on each card to get the content and create the files locally.
+4.  **Review & Create Files**: Your generated files will appear on the screen. Use the "Copy" button on each card to get the content and create the corresponding files on your local machine.
 
----
+### Part 2: Local Development Setup & Workflow
 
-## 🛠️ Using Your Generated Blueprint
+Once you have generated your blueprint, follow these steps to set up your project locally and begin development.
 
-The generated files provide a powerful, guided development experience, especially for the **YouTube Automation** blueprint. Here's how to use it effectively.
+#### Installation and Setup
 
-### 1. Prerequisites
+**1. Prerequisites:**
+-   **Node.js**: Required to run the `solo-workflow.js` script.
+-   **Python**: The example YouTube Automation app is designed to be built with Python and Streamlit.
+-   An **AI Development Environment** (like Google AI Studio) where you can use the generated AI prompts.
 
-- **Node.js**: Required to run the `solo-workflow.js` script.
-- **Python**: The example YouTube Automation app is designed to be built with Python and Streamlit.
-- An **AI Development Environment** (like Google AI Studio) where you can use the generated AI prompts.
-
-### 2. Local Setup
-
-1.  **Create Project Folder**: Create a new directory for your project on your local machine.
-2.  **Create Files**: Using the output from this tool, create the following files and folders:
+**2. Project Setup:**
+1.  **Create Project Folder**: Create a new, empty directory for your project on your local machine.
+2.  **Create Files**: Using the copied content from the web tool, create the full file and folder structure as outlined in the "Project Structure" card. This includes key files like:
     - `package.json`
+    - `.gitignore`
     - `progress-tracker.json`
     - `solo-workflow.js`
-    - `requirements.txt`
-    - `.env.example` (rename to `.env` and add your API keys)
-    - `PROJECT_BRIEF.md`
-    - Create the directory structure: `src/`, `tests/`, `docs/`, `ai-prompts/`, `specs/`.
-    - Place the content for the spec, prompts, and plans into their respective files.
+    - `requirements.txt` (for Python projects)
+    - `.env.example` (rename this to `.env` and add your API keys)
+    - All spec, prompt, and plan files in their respective `specs/` and `ai-prompts/` directories.
 3.  **Install Dependencies**:
-    - Run `npm install` in your terminal to install the dependencies listed in `package.json`.
-    - Set up a Python virtual environment and run `pip install -r requirements.txt`.
+    - Open your terminal in the project root and run `npm install` to install Node.js dependencies.
+    - If it's a Python project, set up a virtual environment and run `pip install -r requirements.txt`.
 
-### 3. The Interactive Workflow (`solo-workflow.js`)
+#### The Interactive Workflow (`solo-workflow.js`)
 
-This script is your personal project manager. It guides you through the development plan you generated.
+This script is your personal project manager. It reads your plan and guides you through development.
 
-#### **Step 1: Start Your First Week**
+1.  **Start Your First Week**:
+    ```bash
+    node solo-workflow.js start-week 1
+    ```
+    This command displays your objectives and tells you which AI prompt file to use.
 
-Open your terminal and run:
-```bash
-node solo-workflow.js start-week 1
-```
-This command will display the objectives for the first development phase (Weeks 1-2) and tell you which AI prompt to use.
+2.  **Generate Code with AI**:
+    -   Open the specified prompt file from the `ai-prompts/` directory.
+    -   Copy the prompt into your AI tool (e.g., Google AI Studio with Gemini).
+    -   Generate the code needed to meet the week's objectives and save it in your `src/` directory.
 
-#### **Step 2: Generate Code with AI**
+3.  **Mark Your Progress**:
+    Once you've completed the objectives, update your progress tracker:
+    ```bash
+    node solo-workflow.js apply-week 1
+    ```
 
--   Go to the `ai-prompts/` directory and open the prompt file for the current phase (e.g., `02-week1-2.md`).
--   Copy the content of this prompt into your preferred AI tool (e.g., Google AI Studio with the Gemini model).
--   Work with the AI to generate the Python/Streamlit code needed to meet the week's objectives. Save the generated code in your `src/` directory.
+4.  **Check Your Status**:
+    At any time, get a summary of your progress:
+    ```bash
+    node solo-workflow.js status
+    ```
 
-#### **Step 3: Mark Your Progress**
-
-Once you've completed the objectives for the week and integrated the code, update your progress tracker by running:
-```bash
-node solo-workflow.js apply-week 1
-```
-This will mark the tasks as complete in `progress-tracker.json` and set up the milestones for the next phase.
-
-#### **Step 4: Check Your Status**
-
-At any time, you can get a summary of your progress:
-```bash
-node solo-workflow.js status
-```
-
-#### **Step 5: Prepare for Launch**
-
-When you're nearing the end of your development timeline, use the built-in checklist:
-```bash
-node solo-workflow.js launch-checklist
-```
+5.  **Prepare for Launch**:
+    When you're nearing completion, use the built-in checklist:
+    ```bash
+    node solo-workflow.js launch-checklist
+    ```
 
 ## 💡 Project Philosophy
 

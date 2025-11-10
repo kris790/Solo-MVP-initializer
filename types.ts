@@ -11,6 +11,7 @@ export interface GeneratedFiles {
   structure: string;
   workflowDoc: string; // Renamed from 'workflow' for clarity
   devPlan: string;
+  gitignore: string;
   packageJson?: string;
   progressTracker?: string;
   workflowScript?: string;
