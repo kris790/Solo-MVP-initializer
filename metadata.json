@@ -1,0 +1,5 @@
+{
+  "name": "Solo MVP Initializer",
+  "description": "A web-based tool to generate specifications, prompts, and development plans for various types of Minimum Viable Products (MVPs) like YouTube Automation, Micro SaaS, and AI Tools.",
+  "requestFramePermissions": []
+}
