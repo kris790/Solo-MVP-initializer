@@ -719,30 +719,34 @@ Provide ALL files needed for a working MVP in a single JSON response. Focus on c
 
     private generateMicroSaaSPrompt(): string {
         return `
-# Gemini Prompt for MicroSaaS - Status Page Incident Update
+# Gemini Prompt Template: MicroSaaS Status Page Update
 
-You are a helpful AI assistant for a SaaS company. Your task is to take a brief, informal description of a technical issue and generate a clear, professional incident update for a public status page.
+This is a template for generating professional incident updates for a public status page.
+To use it, replace the placeholders \`{user_notes}\` and \`{current_status}\` with your specific details, then provide the entire text to a large language model like Gemini.
+
+---
+
+You are a helpful AI assistant for a SaaS company. Your task is to take a brief, informal description of a technical issue and generate a clear, professional incident update for a public status page. The tone should be calm, confident, and empathetic. Avoid overly technical jargon.
 
 **User's Raw Notes:**
 \`\`\`
 {user_notes}
 \`\`\`
 
-**Current Incident Status:** {current_status} (e.g., Investigating, Identified, Monitoring, Resolved)
+**Current Incident Status:** {current_status}
 
-Based on the notes, generate a concise and professional update. The tone should be calm, confident, and empathetic. Avoid overly technical jargon.
+---
+## EXAMPLES
 
 **Example 1:**
-- Notes: "API is slow, users complaining about timeouts. looks like a db query is hanging."
-- Status: "Investigating"
-- Output: "We are currently investigating reports of slow API performance and timeouts. Our team is working to identify the root cause and we will provide another update shortly."
+- **User Notes:** "API is slow, users complaining about timeouts. looks like a db query is hanging."
+- **Status:** "Investigating"
+- **Generated Output:** "We are currently investigating reports of slow API performance and timeouts. Our team is working to identify the root cause and we will provide another update shortly."
 
 **Example 2:**
-- Notes: "fixed the db query, pushed a hotfix. everything looks green now."
-- Status: "Resolved"
-- Output: "A fix has been implemented and we have confirmed that all systems are back to normal operation. We apologize for any inconvenience this may have caused."
-
-**Your Task:** Generate the update for the notes and status provided above.
+- **User Notes:** "fixed the db query, pushed a hotfix. everything looks green now."
+- **Status:** "Resolved"
+- **Generated Output:** "A fix has been implemented and we have confirmed that all systems are back to normal operation. We apologize for any inconvenience this may have caused."
 `;
     }
 
@@ -936,6 +940,15 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        }
+      },
+      animation: {
+        'fade-in': 'fade-in 0.5s ease-out forwards',
+      }
     },
   },
   plugins: [],
@@ -959,11 +972,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )`,
                 'src/App.tsx': `import React, { useState } from 'react';
-import { summarizeMeeting } from './services/gemini';
+import { summarizeMeeting, SummaryResult } from './services/gemini';
 
 function App() {
   const [transcript, setTranscript] = useState('');
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -978,7 +991,7 @@ function App() {
 
     try {
       const result = await summarizeMeeting(transcript);
-      setSummary(JSON.stringify(result, null, 2));
+      setSummary(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unexpected error occurred.');
     } finally {
@@ -1027,11 +1040,64 @@ function App() {
           {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
 
           {summary && (
-            <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-2xl font-bold mb-4">Summary Results</h2>
-              <pre className="text-sm whitespace-pre-wrap font-mono text-gray-300 bg-gray-900/50 p-4 rounded-md overflow-x-auto">
-                <code>{summary}</code>
-              </pre>
+            <div className="mt-10 space-y-8">
+              {/* Summary Card */}
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in">
+                  <h2 className="text-xl font-bold mb-3 text-pink-400">Meeting Summary</h2>
+                  <p className="text-gray-300 leading-relaxed">{summary.summary}</p>
+              </div>
+      
+              {/* Decisions and Actions in a grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Decisions Card */}
+                  <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '150ms'}}>
+                      <h2 className="text-xl font-bold mb-3 text-purple-400">Key Decisions</h2>
+                      <ul className="list-disc list-inside space-y-2 text-gray-300">
+                          {summary.decisions.map((decision, index) => <li key={index}>{decision}</li>)}
+                      </ul>
+                  </div>
+      
+                  {/* Action Items Card */}
+                  <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '300ms'}}>
+                      <h2 className="text-xl font-bold mb-3 text-purple-400">Action Items</h2>
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                              <thead className="text-gray-400">
+                                  <tr>
+                                      <th className="py-2 pr-2 font-semibold">Task</th>
+                                      <th className="py-2 px-2 font-semibold">Owner</th>
+                                      <th className="py-2 pl-2 font-semibold">Due Date</th>
+                                  </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-700">
+                                  {summary.action_items.map((item, index) => (
+                                      <tr key={index}>
+                                          <td className="py-2 pr-2 text-gray-300">{item.task}</td>
+                                          <td className="py-2 px-2 text-gray-400">{item.owner}</td>
+                                          <td className="py-2 pl-2 text-gray-400">{item.due_date}</td>
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+      
+              {/* Follow-up Email Card */}
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '450ms'}}>
+                  <div className="flex justify-between items-center mb-3">
+                       <h2 className="text-xl font-bold text-pink-400">Draft Follow-up Email</h2>
+                       <button 
+                         onClick={() => navigator.clipboard.writeText(summary.follow_up_email)} 
+                         className="bg-gray-700 hover:bg-gray-600 text-xs font-mono px-3 py-1 rounded-md transition-colors"
+                       >
+                         Copy Email
+                       </button>
+                  </div>
+                  <pre className="text-sm whitespace-pre-wrap font-mono text-gray-300 bg-gray-900/50 p-4 rounded-md overflow-x-auto">
+                      <code>{summary.follow_up_email}</code>
+                  </pre>
+              </div>
             </div>
           )}
         </main>
@@ -1059,6 +1125,17 @@ if (!API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+export interface SummaryResult {
+    summary: string;
+    decisions: string[];
+    action_items: {
+        task: string;
+        owner: string;
+        due_date: string;
+    }[];
+    follow_up_email: string;
+}
 
 const responseSchema = {
     type: Type.OBJECT,
@@ -1093,7 +1170,7 @@ const responseSchema = {
     required: ['summary', 'decisions', 'action_items', 'follow_up_email']
 };
 
-export async function summarizeMeeting(transcript: string): Promise<any> {
+export async function summarizeMeeting(transcript: string): Promise<SummaryResult> {
     const prompt = \`Analyze the following meeting transcript and produce a structured, actionable summary in JSON format based on the provided schema.
 
 Meeting Transcript:
@@ -1113,7 +1190,7 @@ Meeting Transcript:
         });
 
         const jsonText = response.text.trim();
-        return JSON.parse(jsonText);
+        return JSON.parse(jsonText) as SummaryResult;
     } catch (error) {
         console.error("Error summarizing meeting:", error);
         if (error instanceof Error) {
