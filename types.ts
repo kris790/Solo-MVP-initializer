@@ -2,6 +2,7 @@ export enum ProjectType {
   YouTubeAutomation = 'youtube-automation',
   MicroSaaS = 'saas-micro',
   AITool = 'ai-tool',
+  PairProgramming = 'pair-programming',
 }
 
 export interface GeneratedFiles {

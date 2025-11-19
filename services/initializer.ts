@@ -29,6 +29,11 @@ class SoloMVPInitializer {
                 getPrompt: this.generateAIToolPrompt,
                 getStructure: this.generateAIToolStructure,
             },
+            [ProjectType.PairProgramming]: {
+                getSpec: this.generatePairProgrammingSpec,
+                getPrompt: this.generatePairProgrammingPrompt,
+                getStructure: this.generatePairProgrammingStructure,
+            },
         };
     }
 
@@ -55,6 +60,12 @@ class SoloMVPInitializer {
             packageJson = this.generatePackageJson(specObj.mvp_focus.product_name);
             progressTracker = this.generateProgressTracker(specObj);
             workflowScript = this.generateSoloWorkflowScript();
+        } else if (this.projectType === ProjectType.PairProgramming) {
+            const stringSpec = template.getSpec(this.projectName);
+            spec = stringSpec;
+            specForReadme = stringSpec;
+            devPlan = this.createDevelopmentPlan(stringSpec);
+            successMessage = `🎉 Pair Programming setup for "${this.projectName}" initialized!\n\nCopy the system instruction into your AI chat to begin.`;
         } else {
             const stringSpec = template.getSpec(this.projectName);
             spec = stringSpec;
@@ -70,6 +81,10 @@ class SoloMVPInitializer {
         if (this.projectType === ProjectType.YouTubeAutomation) {
             const phasePrompts = this.generateSoloPhasePrompts();
             Object.assign(prompts, phasePrompts);
+        } else if (this.projectType === ProjectType.PairProgramming) {
+             // For Pair Programming, we provide the System Instruction instead of a standard prompt
+             prompts['system_instruction.md'] = template.getPrompt(this.projectName);
+             delete prompts['01-mvp-core.md'];
         } else {
             prompts['prompt.md'] = template.getPrompt(this.projectName);
             delete prompts['01-mvp-core.md'];
@@ -231,6 +246,7 @@ A web-based tool designed to help solo developers, indie hackers, and entreprene
   - **YouTube Automation**: A tool to help creators with scripting and optimization.
   - **Micro SaaS**: A boilerplate for a small, focused software-as-a-service application.
   - **AI Productivity Tool**: A template for a tool that leverages large language models.
+  - **Pair Programmer**: A custom system instruction for iterative, task-based development with an AI.
 - **Comprehensive Artifacts**: Each blueprint includes:
   - **MVP Specification**: A clear, human-readable markdown file defining the project's vision, target users, core problems, and features.
   - **Phased AI Prompts**: Context-aware prompts for each development phase, designed to be used with powerful AI models like Gemini to generate code and logic.
@@ -649,7 +665,7 @@ ${features}
         - **Key Decisions:** Bulleted list of important decisions made.
         - **Action Items:** A table of tasks, assigned owners (if mentioned), and deadlines.
         - **Draft Follow-up Email:** A pre-written email summarizing the meeting for attendees.
-    - **Simple UI:** A single-page application for upload, processing, and viewing/copying the results.
+        - **Simple UI:** A single-page application for upload, processing, and viewing/copying the results.
 
 **5. Tech Stack (Proposed):**
     - Frontend: React (Vite) with Tailwind CSS.
@@ -661,6 +677,34 @@ ${features}
     - Number of meeting transcripts processed.
     - High user satisfaction with the quality and accuracy of the generated summaries and action items.
     - "Wow" moments shared by users on social media.
+`;
+    }
+
+    private generatePairProgrammingSpec(projectName: string): string {
+        return `
+# Pair Programming Workflow for: ${projectName}
+
+**1. Philosophy:**
+This project is designed to be built using a rigorous, iterative "Pair Programming" methodology where you (the developer) and an AI assistant work together on one single task at a time.
+
+**2. The Workflow:**
+-   **Single Task Focus:** You will never try to generate the whole app at once. You will provide one specific feature or task to the AI.
+-   **Checklist Driven:** The AI will first generate a detailed checklist for that specific task.
+-   **Interactive Steps:** You will confirm each step before moving to the next. The AI writes the code, you implement and test it.
+
+**3. How to Start:**
+-   Copy the **System Instruction** provided in this blueprint.
+-   Paste it into a fresh chat with a capable model (e.g., Gemini 2.5 Pro, GPT-4, Claude 3.5 Sonnet).
+-   Type the following to begin your first feature:
+    \`\`\`
+    ,1
+    Task: Initialize the project structure for ${projectName}
+    \`\`\`
+
+**4. Why this works:**
+-   Prevents context overload for the AI.
+-   Ensures high-quality, tested code for every feature.
+-   Keeps the project manageable and clean.
 `;
     }
 
@@ -769,6 +813,48 @@ From the transcript, extract the following information and format it in JSON.
 4.  \`follow_up_email\`: Draft a professional follow-up email to all meeting attendees. The email should briefly summarize the key points and clearly list the action items with their owners and due dates. Start the email with "Hi Team,".
 
 **Output Format:** Return ONLY a single, valid JSON object with the keys \`summary\`, \`decisions\`, \`action_items\`, and \`follow_up_email\`.
+`;
+    }
+
+    private generatePairProgrammingPrompt(projectName: string): string {
+        return `You are my pair programmer & project manager. We will work on one feature/project at a time.
+
+**Step 1 - Understand the Task**
+- I will give you a single task/feature description. Example: "Build a React Native Expo app in TypeScript that tracks my calories."
+- Your first job is to expand this into a detailed step-by-step task list in Markdown, broken into small actionable items.
+- The list should cover setup, scaffolding, coding, testing, documentation, and cleanup.
+- Output should be a single Markdown checklist (\`- [ ]\`) so I can tick items off as we go.
+
+**Step 2 - Workflow**
+- Save the checklist as our master to-do file.
+- As we progress, I'll check items off or ask you to check them off.
+- At each step, you will:
+    1. Explain what the step involves.
+    2. Provide the exact code or command needed.
+    3. Ask me to confirm before moving on.
+
+**Step 3 - Best Practices**
+- Default to TypeScript, clean architecture, modular code.
+- Add comments and explanations inside the code for clarity.
+- If multiple approaches exist, suggest pros/cons briefly before proceeding.
+- Optimize for readability, maintainability, and minimal dependencies.
+
+**Step 4 - Interaction Rules**
+- Never skip ahead: focus only on the next unchecked box.
+- Routinely remind me to update the checklist.
+- If something is ambiguous, ask for clarification before coding.
+
+---
+
+**Template Usage**
+
+When I start a new feature, I say:
+\`,1\`
+\`Task: INSERT FEATURE HERE\`
+
+Then you reply with:
+1. A detailed Markdown checklist (long and exhaustive).
+2. The first step expanded with instructions/code.
 `;
     }
 
@@ -1199,6 +1285,28 @@ Meeting Transcript:
         throw new Error("An unknown error occurred while communicating with the AI.");
     }
 }`
+            }
+        };
+        return JSON.stringify(structure, null, 2);
+    }
+
+    private generatePairProgrammingStructure(): string {
+        const structure = {
+            directories: {
+                'src': [],
+                'tests': [],
+                'docs': [],
+                '.github': ['workflows']
+            },
+            files: {
+                'README.md': `# Project Name\n\nThis project is built using the Solo Pair Programming workflow.`,
+                'requirements.txt': '',
+                '.gitignore': `node_modules/
+.env
+__pycache__/
+dist/
+coverage/
+`
             }
         };
         return JSON.stringify(structure, null, 2);

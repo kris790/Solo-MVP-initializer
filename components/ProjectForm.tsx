@@ -15,6 +15,7 @@ const projectOptions = [
   { value: ProjectType.YouTubeAutomation, label: 'YouTube Automation' },
   { value: ProjectType.MicroSaaS, label: 'Micro SaaS' },
   { value: ProjectType.AITool, label: 'AI Productivity Tool' },
+  { value: ProjectType.PairProgramming, label: 'Pair Programmer' },
 ];
 
 const ProjectForm: React.FC<ProjectFormProps> = ({
@@ -46,12 +47,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         <label className="block text-sm font-medium text-dark-text-secondary mb-2">
           Project Type
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {projectOptions.map((option) => (
             <button
               key={option.value}
               onClick={() => setProjectType(option.value)}
-              className={`text-center p-4 border rounded-lg transition-all text-sm sm:text-base ${
+              className={`text-center p-4 border rounded-lg transition-all text-sm sm:text-base flex items-center justify-center h-full ${
                 projectType === option.value
                   ? 'bg-brand-primary border-brand-primary font-bold shadow-lg'
                   : 'bg-dark-card border-dark-border hover:border-brand-secondary'
