@@ -1,38 +1,55 @@
 import { ProjectType, GeneratedFiles, YouTubeAutomationSpec } from '../types';
+import {
+    generateQuickCastSpec,
+    generateQuickCastPrompt,
+    generateQuickCastStructure,
+    generateMicroSaaSSpec,
+    generateMicroSaaSPrompt,
+    generateMicroSaaSStructure,
+    generateAIToolSpec,
+    generateAIToolPrompt,
+    generateAIToolStructure,
+    generatePairProgrammingSpec,
+    generatePairProgrammingPrompt,
+    generatePairProgrammingStructure,
+    generateSoloPhasePrompts,
+    generatePRD
+} from './templates';
+
+interface TemplateHandlers {
+    getSpec: (projectName: string) => YouTubeAutomationSpec | string;
+    getPrompt: (projectName: string) => string;
+    getStructure: () => string;
+}
 
 class SoloMVPInitializer {
     private projectName: string;
     private projectType: ProjectType;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private soloTemplates: Record<string, any>;
+    private soloTemplates: Record<string, TemplateHandlers>;
 
     constructor(projectName: string, projectType: ProjectType) {
         this.projectName = projectName;
         this.projectType = projectType;
-        this.loadTemplates();
-    }
-
-    private loadTemplates() {
         this.soloTemplates = {
             [ProjectType.YouTubeAutomation]: {
-                getSpec: this.generateQuickCastSpec,
-                getPrompt: this.generateQuickCastPrompt,
-                getStructure: this.generateQuickCastStructure,
+                getSpec: generateQuickCastSpec,
+                getPrompt: generateQuickCastPrompt,
+                getStructure: generateQuickCastStructure,
             },
             [ProjectType.MicroSaaS]: {
-                getSpec: this.generateMicroSaaSSpec,
-                getPrompt: this.generateMicroSaaSPrompt,
-                getStructure: this.generateMicroSaaSStructure,
+                getSpec: generateMicroSaaSSpec,
+                getPrompt: generateMicroSaaSPrompt,
+                getStructure: generateMicroSaaSStructure,
             },
             [ProjectType.AITool]: {
-                getSpec: this.generateAIToolSpec,
-                getPrompt: this.generateAIToolPrompt,
-                getStructure: this.generateAIToolStructure,
+                getSpec: generateAIToolSpec,
+                getPrompt: generateAIToolPrompt,
+                getStructure: generateAIToolStructure,
             },
             [ProjectType.PairProgramming]: {
-                getSpec: this.generatePairProgrammingSpec,
-                getPrompt: this.generatePairProgrammingPrompt,
-                getStructure: this.generatePairProgrammingStructure,
+                getSpec: generatePairProgrammingSpec,
+                getPrompt: generatePairProgrammingPrompt,
+                getStructure: generatePairProgrammingStructure,
             },
         };
     }
@@ -52,7 +69,7 @@ class SoloMVPInitializer {
         let workflowScript: string | undefined;
 
         if (this.projectType === ProjectType.YouTubeAutomation) {
-            const specObj = template.getSpec(this.projectName);
+            const specObj = template.getSpec(this.projectName) as YouTubeAutomationSpec;
             spec = this.generateHumanReadableSpec(specObj);
             specForReadme = specObj;
             devPlan = this.createDevelopmentPlan(specObj);
@@ -61,25 +78,27 @@ class SoloMVPInitializer {
             progressTracker = this.generateProgressTracker(specObj);
             workflowScript = this.generateSoloWorkflowScript();
         } else if (this.projectType === ProjectType.PairProgramming) {
-            const stringSpec = template.getSpec(this.projectName);
+            const stringSpec = template.getSpec(this.projectName) as string;
             spec = stringSpec;
             specForReadme = stringSpec;
             devPlan = this.createDevelopmentPlan(stringSpec);
             successMessage = `🎉 Pair Programming setup for "${this.projectName}" initialized!\n\nCopy the system instruction into your AI chat to begin.`;
         } else {
-            const stringSpec = template.getSpec(this.projectName);
+            const stringSpec = template.getSpec(this.projectName) as string;
             spec = stringSpec;
             specForReadme = stringSpec;
             devPlan = this.createDevelopmentPlan(stringSpec);
             successMessage = `🎉 MVP for "${this.projectName}" initialized successfully!\n\nReview your generated blueprint below to get started.`;
         }
 
+        const prd = generatePRD(this.projectName, this.projectType);
+
         const prompts: Record<string, string> = {
             '01-mvp-core.md': template.getPrompt(this.projectName)
         };
 
         if (this.projectType === ProjectType.YouTubeAutomation) {
-            const phasePrompts = this.generateSoloPhasePrompts();
+            const phasePrompts = generateSoloPhasePrompts();
             Object.assign(prompts, phasePrompts);
         } else if (this.projectType === ProjectType.PairProgramming) {
              // For Pair Programming, we provide the System Instruction instead of a standard prompt
@@ -98,6 +117,7 @@ class SoloMVPInitializer {
         const files: GeneratedFiles = {
             readme,
             spec,
+            prd,
             prompts,
             structure,
             workflowDoc,
@@ -249,6 +269,7 @@ A web-based tool designed to help solo developers, indie hackers, and entreprene
   - **Pair Programmer**: A custom system instruction for iterative, task-based development with an AI.
 - **Comprehensive Artifacts**: Each blueprint includes:
   - **MVP Specification**: A clear, human-readable markdown file defining the project's vision, target users, core problems, and features.
+  - **Product Requirements Document (PRD)**: A formal requirements document detailing user stories and functional requirements.
   - **Phased AI Prompts**: Context-aware prompts for each development phase, designed to be used with powerful AI models like Gemini to generate code and logic.
   - **Project Structure**: A recommended file and directory layout for your project.
   - **Interactive Workflow**: An executable \`solo-workflow.js\` script to guide you through development week by week.
@@ -260,7 +281,7 @@ A web-based tool designed to help solo developers, indie hackers, and entreprene
 1.  **Enter Project Name**: Give your project a name (e.g., "QuickCast AI").
 2.  **Select Project Type**: Choose the blueprint that best fits your idea. The "YouTube Automation" type is the most feature-rich example.
 3.  **Initialize MVP**: Click the button to generate your complete blueprint.
-4.  **Review & Download**: Your generated files will appear below. Use the "Copy" button on each card to get the content and create the files locally.
+4.  **Review & Download**: Your generated files will appear below. Use the "Download ZIP" button or "Copy" button on each card to get the content.
 ${workflowSection}
 ## 💡 Project Philosophy
 
@@ -496,89 +517,6 @@ switch (command) {
 `.trim();
     }
 
-    private generateQuickCastSpec(): YouTubeAutomationSpec {
-        return {
-            project_constraints: {
-                developer: "Solo builder",
-                timeline: "4-6 weeks part-time",
-                stack_preference: "Python + Streamlit for quick prototyping",
-                api_budget: "Keep API costs under $50/month for initial testing",
-                scope: "Minimal viable product with 1-2 core features that work well"
-            },
-            target_users: "Small YouTube creators (1K-10K subs) in personal finance niche",
-            core_problems: [
-                "Creator's block - struggling to come up with video ideas",
-                "Time-consuming script writing process",
-                "Difficulty optimizing titles/descriptions for SEO"
-            ],
-            mvp_focus: {
-                product_name: "QuickCast AI",
-                tagline: "AI-powered YouTube script assistant for solo creators",
-                value_prop: "Generate ready-to-film YouTube scripts in 2 minutes instead of 2 hours"
-            },
-            core_features: [
-                {
-                    feature_name: "Script Generator",
-                    description: "Generate complete YouTube scripts from a topic idea",
-                    user_inputs: ["Main topic", "Video length (3/5/8/10 min)", "Tone (educational/entertaining/persuasive)"],
-                    output_structure: "Title + Hook + 3 main points + Conclusion + Call-to-action",
-                    technical_approach: "Gemini API with structured prompt engineering",
-                    api_cost_estimate: "$0.10-$0.30 per script",
-                    priority: 1
-                },
-                {
-                    feature_name: "Title Optimizer",
-                    description: "Generate 5 click-worthy titles and analyze CTR potential",
-                    technical_approach: "Compare against YouTube title patterns database",
-                    cost: "Minimal - can run locally after initial setup",
-                    priority: 2
-                }
-            ],
-            development_phases: {
-                "weeks_1_2": {
-                    "title": "Week 1-2: Core MVP Build",
-                    "tasks": [
-                        "Setup Streamlit application foundation",
-                        "Implement Gemini API integration",
-                        "Build script generator with structured output",
-                        "Create basic UI with topic, length, and tone inputs",
-                        "Test with 5 sample finance topics"
-                    ]
-                },
-                "weeks_3_4": {
-                    "title": "Week 3-4: Enhancements & Data",
-                    "tasks": [
-                        "Add SQLite database for user accounts and script history",
-                        "Implement title optimizer feature",
-                        "Add basic user authentication",
-                        "Improve UI/UX based on initial testing",
-                        "Add script export functionality"
-                    ]
-                },
-                 "weeks_5_6": {
-                    "title": "Week 5-6: Deployment & Launch Prep",
-                    "tasks": [
-                        "Refine UI and add loading/error states",
-                        "Deploy to Hugging Face Spaces or Railway.app",
-                        "Gather feedback from 10 beta testers",
-                        "Write documentation (README)",
-                        "Prepare for launch"
-                    ]
-                }
-            },
-            technical_spec: {
-                apis_required: ["Google Gemini API", "YouTube Data API for research"],
-                database: "SQLite for user accounts and script history",
-                deployment: "Hugging Face Spaces or Railway.app (free tier)"
-            },
-            validation_metrics: [
-                "10+ beta testers providing positive feedback",
-                "Average script generation time under 15 seconds",
-                "Users successfully generating and using 3+ scripts per session"
-            ]
-        };
-    }
-
     private generateHumanReadableSpec(spec: YouTubeAutomationSpec): string {
         const features = spec.core_features
             .sort((a, b) => a.priority - b.priority)
@@ -611,705 +549,6 @@ ${spec.core_problems.map(p => `- ${p}`).join('\n')}
 ## 🚀 Core Features
 ${features}
 `;
-    }
-
-    private generateMicroSaaSSpec(projectName: string): string {
-        return `
-# MVP Specification for ${projectName} - Micro SaaS
-
-**1. Project Vision:** To provide a simple, affordable, and beautiful solution for creating and managing public status pages for small to medium-sized businesses.
-
-**2. Core Problem:** Existing status page solutions are often expensive, complex, or part of a larger, bloated monitoring suite. Startups and small businesses need a "just works" solution.
-
-**3. Target Audience:** SaaS founders, indie hackers, and IT managers at SMBs.
-
-**4. Key MVP Features:**
-    - **User Authentication:** Simple email/password or social login.
-    - **Status Page Creation:** Users can create one public status page on a subdomain (e.g., mycompany.statuspage.app).
-    - **Service Management:** Add/edit/delete services/components to monitor (e.g., API, Website, Dashboard).
-    - **Manual Incident Reporting:** Manually create and update incidents (e.g., Investigating, Identified, Monitoring, Resolved) with status updates.
-    - **Customization:** Basic branding (logo, primary color).
-    - **Public View:** A clean, fast, and responsive public-facing status page.
-
-**5. Tech Stack (Proposed):**
-    - Frontend: React/Vue with Tailwind CSS
-    - Backend: Node.js with a framework like NestJS or a BaaS like Supabase/Firebase.
-    - Database: PostgreSQL or Firestore.
-    - Hosting: A platform-as-a-service like Vercel, Netlify, or Heroku.
-
-**6. Monetization (Post-MVP):**
-    - Tiered pricing: Free plan with branding, paid plans for custom domains, private pages, and automated monitoring.
-
-**7. Success Metrics (MVP):**
-    - Number of active status pages created.
-    - Daily active users (creators).
-    - Positive feedback from early adopters on Twitter/Indie Hackers.
-`;
-    }
-
-    private generateAIToolSpec(projectName: string): string {
-        return `
-# MVP Specification for ${projectName} - AI Productivity Tool
-
-**1. Project Vision:** An AI-powered tool that acts as a "second brain" for meetings, automatically generating summaries, action items, and follow-up emails.
-
-**2. Core Problem:** Professionals attend countless meetings, leading to note-taking fatigue, missed action items, and time wasted on post-meeting administrative tasks.
-
-**3. Target Audience:** Product managers, consultants, sales executives, and team leads who live in meetings.
-
-**4. Key MVP Features:**
-    - **Audio/Transcript Upload:** User can upload an audio file (mp3, wav) or paste a raw text transcript of a meeting.
-    - **AI Processing:** Use a powerful language model (Gemini) to process the transcript.
-    - **Structured Output Generation:** The tool generates a structured output with:
-        - **Concise Summary:** A one-paragraph overview of the meeting.
-        - **Key Decisions:** Bulleted list of important decisions made.
-        - **Action Items:** A table of tasks, assigned owners (if mentioned), and deadlines.
-        - **Draft Follow-up Email:** A pre-written email summarizing the meeting for attendees.
-        - **Simple UI:** A single-page application for upload, processing, and viewing/copying the results.
-
-**5. Tech Stack (Proposed):**
-    - Frontend: React (Vite) with Tailwind CSS.
-    - Backend: Serverless functions (Cloudflare Workers, Vercel Functions) for scalability and cost-efficiency.
-    - AI: Gemini API for all language processing tasks.
-    - Storage: A simple object storage for temporary audio file uploads (e.g., Cloudflare R2, AWS S3).
-
-**6. Success Metrics (MVP):**
-    - Number of meeting transcripts processed.
-    - High user satisfaction with the quality and accuracy of the generated summaries and action items.
-    - "Wow" moments shared by users on social media.
-`;
-    }
-
-    private generatePairProgrammingSpec(projectName: string): string {
-        return `
-# Pair Programming Workflow for: ${projectName}
-
-**1. Philosophy:**
-This project is designed to be built using a rigorous, iterative "Pair Programming" methodology where you (the developer) and an AI assistant work together on one single task at a time.
-
-**2. The Workflow:**
--   **Single Task Focus:** You will never try to generate the whole app at once. You will provide one specific feature or task to the AI.
--   **Checklist Driven:** The AI will first generate a detailed checklist for that specific task.
--   **Interactive Steps:** You will confirm each step before moving to the next. The AI writes the code, you implement and test it.
-
-**3. How to Start:**
--   Copy the **System Instruction** provided in this blueprint.
--   Paste it into a fresh chat with a capable model (e.g., Gemini 2.5 Pro, GPT-4, Claude 3.5 Sonnet).
--   Type the following to begin your first feature:
-    \`\`\`
-    ,1
-    Task: Initialize the project structure for ${projectName}
-    \`\`\`
-
-**4. Why this works:**
--   Prevents context overload for the AI.
--   Ensures high-quality, tested code for every feature.
--   Keeps the project manageable and clean.
-`;
-    }
-
-    private generateQuickCastPrompt(): string {
-        return `## SOLO DEVELOPER MVP: QUICKCAST AI
-
-You are a solo developer building a lean MVP for a YouTube automation tool. Focus on practical, implementable features that can be built quickly with available APIs and libraries.
-
-## PROJECT CONSTRAINTS
-- **Developer**: Solo builder working part-time
-- **Timeline**: 4-6 weeks to working MVP
-- **Stack**: Python + Streamlit for rapid prototyping
-- **API Budget**: Under $50/month for initial testing
-- **Scope**: Minimal viable product with 1-2 core features
-
-## CORE MVP FEATURES
-
-### 1. Script Generator (PRIORITY 1)
-- Generate complete YouTube scripts from topic ideas
-- User inputs: Main topic, Video length (3/5/8/10 min), Tone (educational/entertaining/persuasive)
-- Output structure: Title + Hook + 3 main points + Conclusion + Call-to-action
-- Technical: Gemini API with structured prompt engineering
-- Cost target: $0.10-$0.30 per script
-
-### 2. Title Optimizer (PRIORITY 2)  
-- Generate 5 click-worthy titles and analyze CTR potential
-- Compare against YouTube title patterns database
-- Minimal API costs - can run locally after setup
-
-## TECHNICAL SPECIFICATION
-- **Frontend**: Streamlit web app (single .py file)
-- **Backend**: Python with FastAPI if needed
-- **APIs**: Google Gemini API, YouTube Data API for research
-- **Database**: SQLite for user accounts and script history
-- **Deployment**: Hugging Face Spaces or Railway.app (free tier)
-
-## IMPLEMENTATION PRIORITIES
-1. Working script generator with clean Streamlit UI
-2. Basic user authentication and script history
-3. Title optimizer feature
-4. Deployment and beta testing
-
-## DELIVERABLE REQUIREMENTS
-- COMPLETE working Streamlit application
-- All Python files with proper error handling
-- SQLite database schema and operations
-- API integration with proper error handling
-- Environment configuration
-- Deployment instructions
-- Basic testing setup
-
-## OUTPUT FORMAT
-Provide ALL files needed for a working MVP in a single JSON response. Focus on clean, maintainable code that a solo developer can easily extend.
-`;
-    }
-
-    private generateMicroSaaSPrompt(): string {
-        return `
-# Gemini Prompt Template: MicroSaaS Status Page Update
-
-This is a template for generating professional incident updates for a public status page.
-To use it, replace the placeholders \`{user_notes}\` and \`{current_status}\` with your specific details, then provide the entire text to a large language model like Gemini.
-
----
-
-You are a helpful AI assistant for a SaaS company. Your task is to take a brief, informal description of a technical issue and generate a clear, professional incident update for a public status page. The tone should be calm, confident, and empathetic. Avoid overly technical jargon.
-
-**User's Raw Notes:**
-\`\`\`
-{user_notes}
-\`\`\`
-
-**Current Incident Status:** {current_status}
-
----
-## EXAMPLES
-
-**Example 1:**
-- **User Notes:** "API is slow, users complaining about timeouts. looks like a db query is hanging."
-- **Status:** "Investigating"
-- **Generated Output:** "We are currently investigating reports of slow API performance and timeouts. Our team is working to identify the root cause and we will provide another update shortly."
-
-**Example 2:**
-- **User Notes:** "fixed the db query, pushed a hotfix. everything looks green now."
-- **Status:** "Resolved"
-- **Generated Output:** "A fix has been implemented and we have confirmed that all systems are back to normal operation. We apologize for any inconvenience this may have caused."
-`;
-    }
-
-    private generateAIToolPrompt(): string {
-        return `
-# Gemini Prompt for AI Productivity Tool - Meeting Summarizer
-
-You are a world-class executive assistant. Your job is to analyze the following meeting transcript and produce a structured, actionable summary.
-
-**Meeting Transcript:**
-\`\`\`
-{meeting_transcript}
-\`\`\`
-
-From the transcript, extract the following information and format it in JSON.
-
-1.  \`summary\`: A concise, one-paragraph summary of the meeting's purpose, key discussion points, and outcomes.
-2.  \`decisions\`: A bulleted list of all concrete decisions that were made.
-3.  \`action_items\`: A list of all action items. Each item should be an object with keys for \`task\`, \`owner\`, and \`due_date\` (if mentioned). If an owner or due date is not explicitly mentioned, use "Not specified".
-4.  \`follow_up_email\`: Draft a professional follow-up email to all meeting attendees. The email should briefly summarize the key points and clearly list the action items with their owners and due dates. Start the email with "Hi Team,".
-
-**Output Format:** Return ONLY a single, valid JSON object with the keys \`summary\`, \`decisions\`, \`action_items\`, and \`follow_up_email\`.
-`;
-    }
-
-    private generatePairProgrammingPrompt(projectName: string): string {
-        return `You are my pair programmer & project manager. We will work on one feature/project at a time.
-
-**Step 1 - Understand the Task**
-- I will give you a single task/feature description. Example: "Build a React Native Expo app in TypeScript that tracks my calories."
-- Your first job is to expand this into a detailed step-by-step task list in Markdown, broken into small actionable items.
-- The list should cover setup, scaffolding, coding, testing, documentation, and cleanup.
-- Output should be a single Markdown checklist (\`- [ ]\`) so I can tick items off as we go.
-
-**Step 2 - Workflow**
-- Save the checklist as our master to-do file.
-- As we progress, I'll check items off or ask you to check them off.
-- At each step, you will:
-    1. Explain what the step involves.
-    2. Provide the exact code or command needed.
-    3. Ask me to confirm before moving on.
-
-**Step 3 - Best Practices**
-- Default to TypeScript, clean architecture, modular code.
-- Add comments and explanations inside the code for clarity.
-- If multiple approaches exist, suggest pros/cons briefly before proceeding.
-- Optimize for readability, maintainability, and minimal dependencies.
-
-**Step 4 - Interaction Rules**
-- Never skip ahead: focus only on the next unchecked box.
-- Routinely remind me to update the checklist.
-- If something is ambiguous, ask for clarification before coding.
-
----
-
-**Template Usage**
-
-When I start a new feature, I say:
-\`,1\`
-\`Task: INSERT FEATURE HERE\`
-
-Then you reply with:
-1. A detailed Markdown checklist (long and exhaustive).
-2. The first step expanded with instructions/code.
-`;
-    }
-
-    private generateSoloPhasePrompts(): Record<string, string> {
-        return {
-            '02-week1-2.md': `## WEEK 1-2: CORE MVP BUILD
-
-## CURRENT STATUS
-Starting from scratch - building core script generator.
-
-## WEEK 1-2 OBJECTIVES
-- Setup Streamlit application foundation
-- Implement Gemini API integration
-- Build script generator with structured output
-- Create basic UI with topic, length, and tone inputs
-- Test with 5 sample finance topics
-
-## TECHNICAL FOCUS
-- Clean Streamlit UI with proper state management
-- Structured prompt engineering for consistent script format
-- Error handling for API failures
-- Basic session management
-
-## DELIVERABLES
-- Working script generator MVP
-- Clean, responsive Streamlit interface
-- Proper API error handling
-- Sample test cases
-`,
-            '03-week3-4.md': `## WEEK 3-4: ENHANCEMENTS & DATA
-
-## CURRENT STATUS  
-Core script generator is working. Basic UI functional.
-
-## WEEK 3-4 OBJECTIVES
-- Add SQLite database for user accounts and script history
-- Implement title optimizer feature
-- Add basic user authentication
-- Improve UI/UX based on initial testing
-- Add script export functionality
-
-## TECHNICAL FOCUS
-- SQLite schema design for scripts and users
-- Title analysis algorithm (local processing to save costs)
-- Session-based authentication
-- Data persistence and history
-
-## DELIVERABLES
-- Database with user accounts and script history
-- Title optimizer feature
-- Basic authentication system
-- Enhanced UI with history view
-`
-        };
-    }
-
-    private generateQuickCastStructure(): string {
-        const structure = {
-            directories: {
-                'src': ['utils', 'services', 'database'],
-                'tests': [],
-                'docs': ['api', 'deployment'],
-                'data': ['sample_scripts'],
-                'config': []
-            },
-            files: {
-                'requirements.txt': `streamlit==1.28.0
-google-generativeai
-python-dotenv==1.0.0
-`,
-                '.env.example': `GEMINI_API_KEY=your_gemini_api_key_here
-YOUTUBE_API_KEY=your_youtube_key_here
-`,
-                'PROJECT_BRIEF.md': `# QuickCast AI - Solo Developer MVP\n\nYouTube script generation tool for small creators.`
-            }
-        };
-        return JSON.stringify(structure, null, 2);
-    }
-
-    private generateMicroSaaSStructure(): string {
-        return `
-/ (root)
-|-- /src
-|   |-- /app
-|   |   |-- / (marketing pages)
-|   |   |   |-- page.tsx
-|   |   |   |-- layout.tsx
-|   |   |-- /dashboard
-|   |   |   |-- page.tsx (Main dashboard)
-|   |   |   |-- /settings
-|   |   |   |   |-- page.tsx
-|   |   |-- /auth
-|   |   |   |-- /sign-in
-|   |   |   |   |-- page.tsx
-|   |   |   |-- /sign-up
-|   |   |   |   |-- page.tsx
-|   |   |-- /api (Serverless functions or tRPC routes)
-|   |   |   |-- /webhooks
-|   |   |   |-- /statuspages
-|   |-- /components
-|   |   |-- IncidentForm.tsx
-|   |   |-- ServiceStatus.tsx
-|   |-- /lib
-|   |   |-- db.ts (Database client, e.g., Prisma)
-|   |   |-- auth.ts (Authentication logic)
-|-- /public
-|-- /prisma
-|   |-- schema.prisma
-|-- package.json
-`;
-    }
-
-    private generateAIToolStructure(): string {
-        const structure = {
-            directories: {
-                'src': ['services'],
-                'public': []
-            },
-            files: {
-                'package.json': JSON.stringify({
-                    name: "ai-productivity-tool",
-                    private: true,
-                    version: "0.0.0",
-                    type: "module",
-                    scripts: {
-                        dev: "vite",
-                        build: "tsc && vite build",
-                        preview: "vite preview"
-                    },
-                    dependencies: {
-                        "react": "^18.2.0",
-                        "react-dom": "^18.2.0",
-                        "@google/genai": "^0.3.1"
-                    },
-                    devDependencies: {
-                        "@types/react": "^18.2.0",
-                        "@types/react-dom": "^18.2.0",
-                        "@vitejs/plugin-react": "^4.2.0",
-                        "autoprefixer": "^10.4.16",
-                        "postcss": "^8.4.32",
-                        "tailwindcss": "^3.3.6",
-                        "typescript": "^5.2.2",
-                        "vite": "^5.0.0"
-                    }
-                }, null, 2),
-                'vite.config.ts': `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  // This is a workaround to make process.env available in the browser.
-  // IMPORTANT: This is NOT secure for production apps.
-  // In a real-world scenario, you should make your API calls from a backend server
-  // where your API key can be kept secret. The key is injected by the
-  // execution environment, but exposing it client-side is a security risk.
-  define: {
-    'process.env': {}
-  }
-})`,
-                'tailwind.config.js': `/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-      },
-      keyframes: {
-        'fade-in': {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        }
-      },
-      animation: {
-        'fade-in': 'fade-in 0.5s ease-out forwards',
-      }
-    },
-  },
-  plugins: [],
-}`,
-                '.env.example': 'API_KEY=your_gemini_api_key_here',
-                'README.md': `# AI Productivity Tool\n\nThis is a boilerplate for an AI-powered tool that acts as a "second brain" for meetings, automatically generating summaries, action items, and follow-up emails.`,
-                'src/index.css': `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-`,
-                'src/main.tsx': `import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)`,
-                'src/App.tsx': `import React, { useState } from 'react';
-import { summarizeMeeting, SummaryResult } from './services/gemini';
-
-function App() {
-  const [transcript, setTranscript] = useState('');
-  const [summary, setSummary] = useState<SummaryResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSummarize = async () => {
-    if (!transcript.trim()) {
-      setError('Please enter a transcript.');
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    setSummary(null);
-
-    try {
-      const result = await summarizeMeeting(transcript);
-      setSummary(result);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'An unexpected error occurred.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="bg-gray-900 text-white min-h-screen p-4 sm:p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
-            AI Meeting Summarizer
-          </h1>
-          <p className="mt-4 text-lg text-gray-400">
-            Paste your meeting transcript below to automatically generate summaries, action items, and follow-up emails.
-          </p>
-        </header>
-
-        <main>
-          <div className="space-y-4">
-            <textarea
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              placeholder="Paste your meeting transcript here..."
-              className="w-full h-64 p-4 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none transition"
-              rows={10}
-            />
-            <button
-              onClick={handleSummarize}
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Summarizing...
-                </>
-              ) : 'Summarize Meeting'}
-            </button>
-          </div>
-
-          {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
-
-          {summary && (
-            <div className="mt-10 space-y-8">
-              {/* Summary Card */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in">
-                  <h2 className="text-xl font-bold mb-3 text-pink-400">Meeting Summary</h2>
-                  <p className="text-gray-300 leading-relaxed">{summary.summary}</p>
-              </div>
-      
-              {/* Decisions and Actions in a grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Decisions Card */}
-                  <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '150ms'}}>
-                      <h2 className="text-xl font-bold mb-3 text-purple-400">Key Decisions</h2>
-                      <ul className="list-disc list-inside space-y-2 text-gray-300">
-                          {summary.decisions.map((decision, index) => <li key={index}>{decision}</li>)}
-                      </ul>
-                  </div>
-      
-                  {/* Action Items Card */}
-                  <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '300ms'}}>
-                      <h2 className="text-xl font-bold mb-3 text-purple-400">Action Items</h2>
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm">
-                              <thead className="text-gray-400">
-                                  <tr>
-                                      <th className="py-2 pr-2 font-semibold">Task</th>
-                                      <th className="py-2 px-2 font-semibold">Owner</th>
-                                      <th className="py-2 pl-2 font-semibold">Due Date</th>
-                                  </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-700">
-                                  {summary.action_items.map((item, index) => (
-                                      <tr key={index}>
-                                          <td className="py-2 pr-2 text-gray-300">{item.task}</td>
-                                          <td className="py-2 px-2 text-gray-400">{item.owner}</td>
-                                          <td className="py-2 pl-2 text-gray-400">{item.due_date}</td>
-                                      </tr>
-                                  ))}
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-              </div>
-      
-              {/* Follow-up Email Card */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 animate-fade-in" style={{animationDelay: '450ms'}}>
-                  <div className="flex justify-between items-center mb-3">
-                       <h2 className="text-xl font-bold text-pink-400">Draft Follow-up Email</h2>
-                       <button 
-                         onClick={() => navigator.clipboard.writeText(summary.follow_up_email)} 
-                         className="bg-gray-700 hover:bg-gray-600 text-xs font-mono px-3 py-1 rounded-md transition-colors"
-                       >
-                         Copy Email
-                       </button>
-                  </div>
-                  <pre className="text-sm whitespace-pre-wrap font-mono text-gray-300 bg-gray-900/50 p-4 rounded-md overflow-x-auto">
-                      <code>{summary.follow_up_email}</code>
-                  </pre>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  )
-}
-
-export default App
-`,
-                'src/services/gemini.ts': `import { GoogleGenAI, Type } from "@google/genai";
-
-// IMPORTANT: The following code is a simplified example and should not be used in a production environment.
-// The Gemini API key is exposed on the client side, which is a significant security risk.
-// In a real-world application, all API calls should be made from a secure backend server
-// to protect your API key from being compromised.
-// The execution environment for this app injects the API key via process.env.API_KEY.
-
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-    // In a real app, you might show a user-friendly error message here.
-    // For this boilerplate, we'll throw an error to make the issue clear during development.
-    throw new Error("API_KEY environment variable not set. Please ensure it's configured in your environment.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-
-export interface SummaryResult {
-    summary: string;
-    decisions: string[];
-    action_items: {
-        task: string;
-        owner: string;
-        due_date: string;
-    }[];
-    follow_up_email: string;
-}
-
-const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        summary: {
-            type: Type.STRING,
-            description: "A concise, one-paragraph summary of the meeting's purpose, key discussion points, and outcomes."
-        },
-        decisions: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "A list of all concrete decisions that were made."
-        },
-        action_items: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    task: { type: Type.STRING },
-                    owner: { type: Type.STRING },
-                    due_date: { type: Type.STRING }
-                },
-                required: ['task', 'owner', 'due_date']
-            },
-            description: "A list of all action items. If an owner or due date is not explicitly mentioned, use 'Not specified'."
-        },
-        follow_up_email: {
-            type: Type.STRING,
-            description: 'Draft a professional follow-up email to all meeting attendees. Start the email with "Hi Team,".'
-        }
-    },
-    required: ['summary', 'decisions', 'action_items', 'follow_up_email']
-};
-
-export async function summarizeMeeting(transcript: string): Promise<SummaryResult> {
-    const prompt = \`Analyze the following meeting transcript and produce a structured, actionable summary in JSON format based on the provided schema.
-
-Meeting Transcript:
-\\\`\\\`\\\`
-\${transcript}
-\\\`\\\`\\\`
-\`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: responseSchema,
-            }
-        });
-
-        const jsonText = response.text.trim();
-        return JSON.parse(jsonText) as SummaryResult;
-    } catch (error) {
-        console.error("Error summarizing meeting:", error);
-        if (error instanceof Error) {
-            throw new Error(\`Failed to get summary from Gemini: \${error.message}\`);
-        }
-        throw new Error("An unknown error occurred while communicating with the AI.");
-    }
-}`
-            }
-        };
-        return JSON.stringify(structure, null, 2);
-    }
-
-    private generatePairProgrammingStructure(): string {
-        const structure = {
-            directories: {
-                'src': [],
-                'tests': [],
-                'docs': [],
-                '.github': ['workflows']
-            },
-            files: {
-                'README.md': `# Project Name\n\nThis project is built using the Solo Pair Programming workflow.`,
-                'requirements.txt': '',
-                '.gitignore': `node_modules/
-.env
-__pycache__/
-dist/
-coverage/
-`
-            }
-        };
-        return JSON.stringify(structure, null, 2);
     }
 
     private createSoloWorkflowDoc(spec: string): string {

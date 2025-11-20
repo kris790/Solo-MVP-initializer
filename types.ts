@@ -8,6 +8,7 @@ export enum ProjectType {
 export interface GeneratedFiles {
   readme: string;
   spec: string;
+  prd: string;
   prompts: Record<string, string>;
   structure: string;
   workflowDoc: string; // Renamed from 'workflow' for clarity

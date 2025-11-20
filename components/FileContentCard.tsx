@@ -1,4 +1,6 @@
 import React, { useState, ReactNode } from 'react';
+import { ClipboardIcon } from './icons/ClipboardIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
 interface FileContentCardProps {
   title: string;
@@ -19,18 +21,33 @@ const FileContentCard: React.FC<FileContentCardProps> = ({ title, fileName, cont
   return (
     <div className="bg-dark-card rounded-lg border border-dark-border shadow-lg flex flex-col h-full">
       <div className="p-4 border-b border-dark-border flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <span className="text-brand-secondary">{icon}</span>
-          <div>
-            <h3 className="font-bold text-lg">{title}</h3>
-            <p className="text-xs text-dark-text-secondary">{fileName}</p>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <span className="text-brand-secondary flex-shrink-0">{icon}</span>
+          <div className="min-w-0">
+            <h3 className="font-bold text-lg truncate">{title}</h3>
+            <p className="text-xs text-dark-text-secondary truncate">{fileName}</p>
           </div>
         </div>
         <button
           onClick={handleCopy}
-          className="bg-gray-700 hover:bg-gray-600 text-xs font-mono px-3 py-1 rounded-md transition-colors"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-xs font-bold shadow-sm flex-shrink-0 ${
+            isCopied 
+              ? 'bg-green-900/30 text-green-400 border border-green-500/30' 
+              : 'bg-dark-bg hover:bg-gray-800 border border-dark-border text-dark-text hover:border-dark-text-secondary'
+          }`}
+          title="Copy to Clipboard"
         >
-          {isCopied ? 'Copied!' : 'Copy'}
+          {isCopied ? (
+            <>
+              <CheckCircleIcon className="w-3.5 h-3.5" />
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <ClipboardIcon className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </>
+          )}
         </button>
       </div>
       <div className="p-4 overflow-auto h-96">
